@@ -16,7 +16,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY manager_k8s.py .
+COPY citus-k8s-manager.py .
 
 # Create directory for healthcheck
 RUN mkdir -p /healthcheck
@@ -25,4 +25,4 @@ RUN mkdir -p /healthcheck
 ENV PYTHONUNBUFFERED=1
 
 # Set entrypoint
-ENTRYPOINT ["python", "manager_k8s.py"]
+ENTRYPOINT ["python", "citus-k8s-manager.py"]
