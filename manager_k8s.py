@@ -105,19 +105,21 @@ def get_ready_worker_pods(k8s, namespace, label_selector):
 
 def sync_workers(k8s, namespace, label_selector, conn):
     """Synchronize Kubernetes worker pods with Citus nodes"""
-    logger.info("Synchronizing worker nodes...")
 
-    # Get current Citus nodes
+    # Get current Citus nodes and ready worker pods
     citus_nodes = get_citus_nodes(conn)
-    logger.info(f"Current Citus nodes: {citus_nodes}")
-
-    # Get ready worker pods
     ready_pods = get_ready_worker_pods(k8s, namespace, label_selector)
     ready_pod_ips = [pod.status.pod_ip for pod in ready_pods]
-    logger.info(f"Ready worker pods: {ready_pod_ips}")
 
-    # Add missing workers
+    logger.info( "Synchronizing worker nodes",
+        extra={
+            "citus_nodes": citus_nodes,
+            "ready_worker_pods": ready_pod_ips,
+        }
+    )
+
     for pod in ready_pods:
+        # Add missing workers
         if pod.status.pod_ip not in citus_nodes:
             logger.info(f"Adding missing worker: {pod.status.pod_ip}")
             add_worker(conn, pod.status.pod_ip)
