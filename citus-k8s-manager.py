@@ -28,20 +28,19 @@ def connect_to_master():
     postgres_user = os.environ.get("POSTGRES_USER")
     postgres_db = os.environ.get("POSTGRES_DB")
 
-    conn = None
-    while conn is None:
-        try:
-            conn = psycopg2.connect(
-                dbname=postgres_db,
-                user=postgres_user,
-                host=citus_host,
-                password=postgres_pass,
-            )
-        except psycopg2.OperationalError:
-            logger.warning(f"Could not connect to {citus_host}, retrying...")
-            sleep(1)
-        except Exception as e:
-            raise e
+    try:
+        conn = psycopg2.connect(
+            dbname=postgres_db,
+            user=postgres_user,
+            host=citus_host,
+            password=postgres_pass,
+        )
+    except psycopg2.OperationalError as e:
+        logger.warning(f"Could not connect to {citus_host}...")
+        raise e
+    except Exception as e:
+        raise e
+
     conn.autocommit = True
     logger.info(f"Connected to {citus_host}")
     return conn
@@ -138,8 +137,6 @@ def watch_workers():
             "LABEL_SELECTOR environment variable must be set to be able to find mobilitydbc worker nodes"
         )
 
-    conn = connect_to_master()
-
     # Signal ready for readiness/liveness probes
     open(HEALTHCHECK_FILE, "a").close()
 
@@ -153,7 +150,9 @@ def watch_workers():
     )
     while True:
         try:
+            conn = connect_to_master()
             sync_workers(k8s, namespace, label_selector, conn)
+            conn.close()
             sleep(SCAN_INTERVAL_SECONDS)
 
         except Exception as e:
