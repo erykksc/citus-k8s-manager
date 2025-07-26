@@ -155,6 +155,10 @@ def watch_workers():
             conn.close()
             sleep(SCAN_INTERVAL_SECONDS)
 
+        except psycopg2.OperationalError as e:
+            logger.info("Retrying to connect to database in 5sec...")
+            sleep(5)
+
         except Exception as e:
             logger.error(f"Error during sync: {e}")
             # Let the pod die so Kubernetes can restart it
